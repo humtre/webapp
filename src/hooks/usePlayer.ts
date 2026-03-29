@@ -64,6 +64,7 @@ export function usePlayer(playlist: Track[]): PlayerState {
     const onPlay  = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
     const onEnded = () => {
+      wantsPlayRef.current = true;
       const n = pickNext(live.current.curIdx);
       live.current.curIdx = n;
       setCurIdx(n);
@@ -97,6 +98,29 @@ export function usePlayer(playlist: Track[]): PlayerState {
     audio.src = streamUrl(track.blobName);
     audio.load();
     if (shouldPlay) audio.play().catch(() => {});
+
+    // Update document title and Media Session (PiP / lock screen)
+    document.title = `${track.id} – humtre`;
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.id,
+        artist: 'humtre',
+      });
+      navigator.mediaSession.setActionHandler('play',  () => audio.play());
+      navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        const p = (live.current.curIdx - 1 + live.current.playlist.length) % live.current.playlist.length;
+        wantsPlayRef.current = true;
+        live.current.curIdx = p;
+        setCurIdx(p);
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        wantsPlayRef.current = true;
+        const n = pickNext(live.current.curIdx);
+        live.current.curIdx = n;
+        setCurIdx(n);
+      });
+    }
   }, [curIdx, playlist]);
 
   // Global keyboard shortcuts

@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import type { Track } from '@/types';
+import { gradient } from '@/constants/colors';
 import styles from '@/styles/PlayerBar.module.css';
 
 /* ── Inline SVG icons ── */
@@ -41,12 +42,6 @@ const VolMute = () => (
   </svg>
 );
 
-const GRADIENTS = [
-  'linear-gradient(135deg,#052e12,#1db954)', 'linear-gradient(135deg,#3a0520,#e91e8c)',
-  'linear-gradient(135deg,#1a0a40,#7c4dff)', 'linear-gradient(135deg,#3a1800,#ff6d00)',
-  'linear-gradient(135deg,#002e35,#00bcd4)', 'linear-gradient(135deg,#3a0a08,#f44336)',
-  'linear-gradient(135deg,#1e3008,#8bc34a)', 'linear-gradient(135deg,#3a1408,#ff5722)',
-];
 
 interface Props {
   track:           Track;
@@ -71,7 +66,7 @@ export default function PlayerBar({
 }: Props) {
   const prevVolRef = useRef(0.7);
   const pct        = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const grad       = GRADIENTS[trackIndex % GRADIENTS.length];
+  const grad       = gradient(trackIndex);
 
   const VolumeIcon = volume === 0 ? VolMute : volume < 0.34 ? VolLow : volume < 0.67 ? VolMid : VolHigh;
 
