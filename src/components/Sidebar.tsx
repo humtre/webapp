@@ -29,7 +29,7 @@ interface Props {
   onClose:  () => void;
 }
 
-export default function Sidebar({ playlist, curIdx, isOpen, onSelect, onClose }: Props) {
+export default function Sidebar({ playlist, curIdx, isOpen, onSelect }: Props) {
   const activeRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
