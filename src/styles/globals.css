@@ -1,0 +1,31 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #121212;
+  --surface:   #1a1a1a;
+  --card:      #242424;
+  --hover:     #2a2a2a;
+  --text:      #ffffff;
+  --muted:     #b3b3b3;
+  --subtle:    #535353;
+  --accent:    #1db954;
+  --accent-hi: #1ed760;
+  --sidebar-w: 260px;
+  --player-h:  100px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button { cursor: pointer; border: none; background: none; color: inherit; padding: 0; }
+
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--subtle); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #787878; }

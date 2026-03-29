@@ -1,0 +1,120 @@
+/* ── Desktop grid ──────────────────────────────────────────────────────── */
+.bar {
+  grid-area: player;
+  position: relative;
+  background: #181818;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  grid-template-areas: "left  controls  right";
+  align-items: center;
+  padding: 0 24px;
+  column-gap: 16px;
+}
+
+/* Seek bar replaces the border-top line */
+.seekBar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--subtle);
+  cursor: pointer;
+  transition: height 0.15s;
+  z-index: 1;
+}
+.seekBar:hover         { height: 5px; }
+.seekBar:hover .seekFill { background: var(--accent); }
+
+/* ── Left ── */
+.left  {
+  grid-area: left;
+  display: flex; align-items: center; gap: 12px; min-width: 0;
+}
+.thumb { width: 56px; height: 56px; border-radius: 4px; flex-shrink: 0; transition: background 0.8s; }
+.name  { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Controls ── */
+.controls {
+  grid-area: controls;
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; overflow: visible;
+}
+
+.btn {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  color: var(--muted);
+  transition: color 0.15s, transform 0.1s;
+}
+.btn:hover { color: var(--text); transform: scale(1.1); }
+.btn.on    { color: var(--accent); }
+.btn.on::after {
+  content: '';
+  position: absolute;
+  bottom: -5px; left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.play {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: #fff; color: #000;
+  transition: transform 0.1s, background 0.12s;
+}
+.play:hover { transform: scale(1.06); background: var(--accent-hi); }
+
+.seekFill {
+  height: 100%; background: var(--muted);
+  pointer-events: none; transition: background 0.15s;
+}
+
+/* ── Right ── */
+.right {
+  grid-area: right;
+  display: flex; align-items: center; gap: 8px; justify-content: flex-end;
+}
+.vol {
+  -webkit-appearance: none; appearance: none;
+  width: 110px; height: 4px; border-radius: 2px;
+  outline: none; cursor: pointer;
+  background: linear-gradient(to right, #fff 0%, #fff var(--p,70%), var(--subtle) var(--p,70%), var(--subtle) 100%);
+  transition: height 0.15s;
+}
+.vol:hover {
+  height: 6px;
+  background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--p,70%), var(--subtle) var(--p,70%), var(--subtle) 100%);
+}
+.vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 0; height: 0; }
+.vol:hover::-webkit-slider-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+
+/* ── Menu button — hidden on desktop ── */
+.menuBtn {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex-shrink: 0;
+  color: var(--muted);
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .bar {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "left controls";
+    padding: 0 16px;
+    column-gap: 8px;
+  }
+
+  .right      { display: none; }
+  .shuffleBtn { display: none; }
+  .menuBtn    { display: flex; }
+
+  .thumb { width: 42px; height: 42px; }
+  .name  { font-size: 0.8rem; }
+
+  .controls { justify-content: flex-end; gap: 4px; }
+  .btn      { width: 40px; height: 40px; }
+  .play     { width: 46px; height: 46px; }
+}
