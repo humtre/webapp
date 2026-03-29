@@ -14,3 +14,26 @@ export function gradient(index: number): string {
   const [fg, bg] = PALETTE[index % PALETTE.length];
   return `linear-gradient(135deg,${bg},${fg})`;
 }
+
+/** Generate a 256x256 gradient artwork blob URL for Media Session. */
+const artCache = new Map<number, string>();
+export function generateArtwork(index: number): string {
+  const key = index % PALETTE.length;
+  if (artCache.has(key)) return artCache.get(key)!;
+
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const [fg, bg] = PALETTE[key];
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, bg);
+  grad.addColorStop(1, fg);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  const url = canvas.toDataURL('image/png');
+  artCache.set(key, url);
+  return url;
+}

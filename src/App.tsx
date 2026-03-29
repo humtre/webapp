@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { usePlayer }  from '@/hooks/usePlayer';
+import { useLikes }   from '@/hooks/useLikes';
 import Sidebar        from '@/components/Sidebar';
 import MainView       from '@/components/MainView';
 import PlayerBar      from '@/components/PlayerBar';
@@ -25,8 +26,21 @@ export default function App() {
     fetchPlaylist().then(setPlaylist).catch((e) => setError(String(e)));
   }, []);
 
-  const player = usePlayer(playlist);
+  const likes  = useLikes();
+  const player = usePlayer(playlist, likes.likesMap);
   const track  = playlist[player.curIdx];
+
+  // 'f' = +1 like, 'F' (shift+f) = -1 like
+  const handleLikeKey = useCallback((e: KeyboardEvent) => {
+    if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) return;
+    if (!track) return;
+    if (e.key === 'f') { e.preventDefault(); likes.addLike(track.id); }
+    if (e.key === 'F') { e.preventDefault(); likes.removeLike(track.id); }
+  }, [track, likes]);
+  useEffect(() => {
+    window.addEventListener('keydown', handleLikeKey);
+    return () => window.removeEventListener('keydown', handleLikeKey);
+  }, [handleLikeKey]);
 
   if (error) return <div className={styles.err}>{error}</div>;
 
@@ -51,6 +65,7 @@ export default function App() {
             playlist={playlist}
             curIdx={player.curIdx}
             isOpen={sidebarOpen}
+            getLikes={likes.getLikes}
             onSelect={(i) => { player.jumpTo(i); setSidebarOpen(false); }}
             onClose={() => setSidebarOpen(false)}
           />
@@ -59,6 +74,9 @@ export default function App() {
             track={track}
             trackIndex={player.curIdx}
             isPlaying={player.isPlaying}
+            likes={track ? likes.getLikes(track.id) : 0}
+            onLike={() => track && likes.addLike(track.id)}
+            onUnlike={() => track && likes.removeLike(track.id)}
           />
 
           <PlayerBar
@@ -68,13 +86,16 @@ export default function App() {
             currentTime={player.currentTime}
             duration={player.duration}
             volume={player.volume}
-            shuffle={player.shuffle}
+            shuffleMode={player.shuffleMode}
+            likes={track ? likes.getLikes(track.id) : 0}
+            onLike={() => track && likes.addLike(track.id)}
+            onUnlike={() => track && likes.removeLike(track.id)}
             onTogglePlay={player.togglePlay}
             onNext={player.next}
             onPrev={player.prev}
             onSeek={player.seek}
             onVolumeChange={player.changeVolume}
-            onToggleShuffle={player.toggleShuffle}
+            onCycleShuffleMode={player.cycleShuffleMode}
             onMenuToggle={() => setSidebarOpen((o) => !o)}
           />
         </>

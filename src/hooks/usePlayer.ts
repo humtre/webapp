@@ -1,11 +1,14 @@
 import { useRef, useState, useEffect } from 'react';
 import type { Track } from '@/types';
 import { SEARCH_SERVICE } from '@/App';
+import { generateArtwork } from '@/constants/colors';
 
 // Audio stream URL — the server proxies bytes from GCS so no signed key needed
 function streamUrl(blobName: string): string {
   return `${SEARCH_SERVICE}/api/stream?blob_name=${encodeURIComponent(blobName)}`;
 }
+
+export type ShuffleMode = 'likes' | 'random' | 'sequential';
 
 interface PlayerState {
   audioRef:       React.RefObject<HTMLAudioElement | null>;
@@ -14,17 +17,17 @@ interface PlayerState {
   currentTime:    number;
   duration:       number;
   volume:         number;
-  shuffle:        boolean;
+  shuffleMode:    ShuffleMode;
   togglePlay:     () => void;
   next:           () => void;
   prev:           () => void;
   jumpTo:         (i: number) => void;
   seek:           (t: number) => void;
   changeVolume:   (v: number) => void;
-  toggleShuffle:  () => void;
+  cycleShuffleMode: () => void;
 }
 
-export function usePlayer(playlist: Track[]): PlayerState {
+export function usePlayer(playlist: Track[], likesMap: Map<string, number>): PlayerState {
   const audioRef     = useRef<HTMLAudioElement>(null);
   const wantsPlayRef = useRef(false); // jumpTo() sets this so the track auto-plays on select
 
@@ -33,22 +36,35 @@ export function usePlayer(playlist: Track[]): PlayerState {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration,    setDuration]    = useState(0);
   const [volume,      setVolume]      = useState(0.7);
-  const [shuffle,     setShuffle]     = useState(false);
+  const [shuffleMode, setShuffleMode] = useState<ShuffleMode>('likes');
 
   // Mutable ref so audio event callbacks always see current values without stale closures
-  const live = useRef({ curIdx: 0, shuffle: false, playlist: [] as Track[] });
-  useEffect(() => { live.current.curIdx   = curIdx;   }, [curIdx]);
-  useEffect(() => { live.current.shuffle  = shuffle;  }, [shuffle]);
+  const live = useRef({ curIdx: 0, shuffleMode: 'likes' as ShuffleMode, playlist: [] as Track[], likesMap: new Map<string, number>() });
+  useEffect(() => { live.current.curIdx      = curIdx;      }, [curIdx]);
+  useEffect(() => { live.current.shuffleMode = shuffleMode; }, [shuffleMode]);
   useEffect(() => { live.current.playlist = playlist; }, [playlist]);
+  useEffect(() => { live.current.likesMap = likesMap; }, [likesMap]);
 
   function pickNext(from: number): number {
     const list = live.current.playlist;
     if (!list.length) return 0;
-    if (!live.current.shuffle) return (from + 1) % list.length;
-    // Shuffle: random index, avoid repeating the same track
-    let n = Math.floor(Math.random() * list.length);
-    if (list.length > 1 && n === from) n = (from + 1) % list.length;
-    return n;
+    if (live.current.shuffleMode === 'sequential') return (from + 1) % list.length;
+
+    // 'likes' mode: weighted by likes count; 'random' mode: equal weight
+    const likes = live.current.likesMap;
+    const isLikesMode = live.current.shuffleMode === 'likes';
+    const weights = list.map((t, i) =>
+      i === from ? 0 : (isLikesMode ? (likes.has(t.id) ? likes.get(t.id)! : 1) : 1)
+    );
+    const total = weights.reduce((a, b) => a + b, 0);
+    if (total === 0) return (from + 1) % list.length;
+
+    let roll = Math.random() * total;
+    for (let i = 0; i < weights.length; i++) {
+      roll -= weights[i];
+      if (roll <= 0) return i;
+    }
+    return (from + 1) % list.length;
   }
 
   // Attach audio element event listeners once on mount.
@@ -84,6 +100,16 @@ export function usePlayer(playlist: Track[]): PlayerState {
     };
   }, []);
 
+  // Pick a weighted-random first track when playlist loads
+  const hasPickedFirst = useRef(false);
+  useEffect(() => {
+    if (hasPickedFirst.current || !playlist.length) return;
+    hasPickedFirst.current = true;
+    const first = pickNext(-1);
+    live.current.curIdx = first;
+    setCurIdx(first);
+  }, [playlist, likesMap]);
+
   // Load a new track whenever the index or playlist changes
   useEffect(() => {
     const audio = audioRef.current;
@@ -100,11 +126,13 @@ export function usePlayer(playlist: Track[]): PlayerState {
     if (shouldPlay) audio.play().catch(() => {});
 
     // Update document title and Media Session (PiP / lock screen)
-    document.title = `${track.id} – humtre`;
+    const likes = likesMap.has(track.id) ? likesMap.get(track.id)! : 1;
+    document.title = likes > 0 ? `${track.id} · ♥ ${likes}` : track.id;
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.id,
-        artist: 'humtre',
+        artist: likes > 0 ? `♥ ${likes}` : '',
+        artwork: [{ src: generateArtwork(curIdx), sizes: '256x256', type: 'image/png' }],
       });
       navigator.mediaSession.setActionHandler('play',  () => audio.play());
       navigator.mediaSession.setActionHandler('pause', () => audio.pause());
@@ -215,9 +243,11 @@ export function usePlayer(playlist: Track[]): PlayerState {
     setCurIdx(i);
   }
 
+  const MODES: ShuffleMode[] = ['likes', 'random', 'sequential'];
+
   return {
-    audioRef, curIdx, isPlaying, currentTime, duration, volume, shuffle,
+    audioRef, curIdx, isPlaying, currentTime, duration, volume, shuffleMode,
     togglePlay, next, prev, jumpTo, seek, changeVolume,
-    toggleShuffle: () => setShuffle((s) => !s),
+    cycleShuffleMode: () => setShuffleMode((m) => MODES[(MODES.indexOf(m) + 1) % MODES.length]),
   };
 }
