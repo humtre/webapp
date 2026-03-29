@@ -131,7 +131,7 @@ export function usePlayer(playlist: Track[], likesMap: Map<string, number>): Pla
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.id,
-        artist: likes > 0 ? `♥ ${likes}` : '',
+        artist: likes > 0 ? `♥ ${likes} · humtre` : 'humtre',
         artwork: [{ src: generateArtwork(curIdx), sizes: '256x256', type: 'image/png' }],
       });
       navigator.mediaSession.setActionHandler('play',  () => audio.play());
